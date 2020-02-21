@@ -138,7 +138,8 @@ int main(int argc, char** argv) {
     int numHeaders;
     fits_get_hdrspace(inputFilePtr, &numHeaders, NULL, &status);
     char headerTmp[255];
-    for (auto i = 0; i < numHeaders; i++) {
+    // This is 1-indexed!
+    for (auto i = 1; i <= numHeaders; i++) {
         fits_read_record(inputFilePtr, i, headerTmp, &status);
         string headerLine(headerTmp);
         if (headerLine.find("COMMENT") == 0) {
