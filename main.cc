@@ -9,7 +9,7 @@ bool getOptions(int argc, char** argv, std::string& inputFileName, std::string& 
     bool err(false);
     std::string usage = "Usage: hdf_convert [-o output_filename] [-s] [-q] input_filename\n\nConvert a FITS file to an HDF5 file with the IDIA schema\n\nOptions:\n\n-o\tOutput filename\n-s\tUse slower but less memory-intensive method (enable if memory allocation fails)\n-c\tUse a chunked dataset (will be turned on automatically if -s is used)\n-q\tSuppress all non-error output";
     
-    while ((opt = getopt(argc, argv, ":o:sq")) != -1) {
+    while ((opt = getopt(argc, argv, ":o:scq")) != -1) {
         switch (opt) {
             case 'o':
                 outputFileName.assign(optarg);
