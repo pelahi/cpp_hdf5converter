@@ -1,6 +1,6 @@
 #include "Converter.h"
 
-SlowConverter::SlowConverter(std::string inputFileName, std::string outputFileName) : Converter(inputFileName, outputFileName) {
+SlowConverter::SlowConverter(std::string inputFileName, std::string outputFileName, bool chunked) : Converter(inputFileName, outputFileName, chunked) {
     MipMap::initialise(mipMaps, N, width, height, 1);
     timer = Timer(stokes * depth * height * width, true);
 }

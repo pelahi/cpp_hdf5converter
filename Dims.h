@@ -33,18 +33,20 @@ struct StatsDims {
 struct Dims {
     Dims() {}
     
-    Dims(hsize_t width, hsize_t height) :
+    Dims(hsize_t width, hsize_t height, bool chunked) :
         N(2),
         width(width), height(height), depth(1), stokes(1),
+        chunked(chunked),
         standard({height, width}),
         mipMapExtra({}),
         tileDims({TILE_SIZE, TILE_SIZE}),
         statsXY({}, depth * stokes, defaultBins()) // dims, size, bins
     {}
     
-    Dims(hsize_t width, hsize_t height, hsize_t depth) :
+    Dims(hsize_t width, hsize_t height, hsize_t depth, bool chunked) :
         N(3),
         width(width), height(height), depth(depth), stokes(1),
+        chunked(chunked),
         standard({depth, height, width}),
         swizzled({width, height, depth}),
         mipMapExtra({depth}),
@@ -54,9 +56,10 @@ struct Dims {
         statsZ({height, width}, width * height * stokes) // dims, size
     {}
 
-    Dims(hsize_t width, hsize_t height, hsize_t depth, hsize_t stokes) :
+    Dims(hsize_t width, hsize_t height, hsize_t depth, hsize_t stokes, bool chunked) :
         N(4),
         width(width), height(height), depth(depth), stokes(stokes),
+        chunked(chunked),
         standard({stokes, depth, height, width}),
         swizzled({stokes, width, height, depth}),
         mipMapExtra({stokes, depth}),
@@ -71,21 +74,22 @@ struct Dims {
     }
     
     bool useChunks() {
-        return TILE_SIZE <= width && TILE_SIZE <= height;
+        return chunked && TILE_SIZE <= width && TILE_SIZE <= height;
     }
     
-    static Dims makeDims(int N, long* dims) {
+    static Dims makeDims(int N, long* dims, bool chunked) {
         if (N == 2) {
-            return Dims(dims[0], dims[1]);
+            return Dims(dims[0], dims[1], chunked);
         } else if (N == 3) {
-            return Dims(dims[0], dims[1], dims[2]);
+            return Dims(dims[0], dims[1], dims[2], chunked);
         } else if (N == 4) {
-            return Dims(dims[0], dims[1], dims[2], dims[3]);
+            return Dims(dims[0], dims[1], dims[2], dims[3], chunked);
         }
     }
 
     int N;
     hsize_t width, height, depth, stokes;
+    bool chunked;
     
     std::vector<hsize_t> standard;
     std::vector<hsize_t> swizzled;

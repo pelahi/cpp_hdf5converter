@@ -10,10 +10,10 @@
 class Converter {
 public:
     Converter() {}
-    Converter(std::string inputFileName, std::string outputFileName);
+    Converter(std::string inputFileName, std::string outputFileName, bool chunked);
     ~Converter();
     
-    static std::unique_ptr<Converter> getConverter(std::string inputFileName, std::string outputFileName, bool slow);
+    static std::unique_ptr<Converter> getConverter(std::string inputFileName, std::string outputFileName, bool slow, bool chunked);
     void convert();
     
 protected:
@@ -69,7 +69,7 @@ protected:
 
 class FastConverter : public Converter {
 public:
-    FastConverter(std::string inputFileName, std::string outputFileName);
+    FastConverter(std::string inputFileName, std::string outputFileName, bool chunked);
     
 protected:
     void copy() override;
@@ -78,7 +78,7 @@ protected:
 
 class SlowConverter : public Converter {
 public:
-    SlowConverter(std::string inputFileName, std::string outputFileName);
+    SlowConverter(std::string inputFileName, std::string outputFileName, bool chunked);
     
 protected:
     void copy() override;

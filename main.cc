@@ -1,13 +1,13 @@
 #include <getopt.h>
 #include "Converter.h"
 
-bool getOptions(int argc, char** argv, std::string& inputFileName, std::string& outputFileName, bool& slow) {
+bool getOptions(int argc, char** argv, std::string& inputFileName, std::string& outputFileName, bool& slow, bool& chunked) {
     extern int optind;
     extern char *optarg;
     
     int opt;
     bool err(false);
-    std::string usage = "Usage: hdf_convert [-o output_filename] [-s] [-q] input_filename\n\nConvert a FITS file to an HDF5 file with the IDIA schema\n\nOptions:\n\n-o\tOutput filename\n-s\tUse slower but less memory-intensive method (enable if memory allocation fails)\n-q\tSuppress all non-error output";
+    std::string usage = "Usage: hdf_convert [-o output_filename] [-s] [-q] input_filename\n\nConvert a FITS file to an HDF5 file with the IDIA schema\n\nOptions:\n\n-o\tOutput filename\n-s\tUse slower but less memory-intensive method (enable if memory allocation fails)\n-c\tUse a chunked dataset (will be turned on automatically if -s is used)\n-q\tSuppress all non-error output";
     
     while ((opt = getopt(argc, argv, ":o:sq")) != -1) {
         switch (opt) {
@@ -15,8 +15,10 @@ bool getOptions(int argc, char** argv, std::string& inputFileName, std::string& 
                 outputFileName.assign(optarg);
                 break;
             case 's':
-                // use slower but less memory-intensive method
                 slow = true;
+                break;
+            case 'c':
+                chunked = true;
                 break;
             case 'q':
                 std::cout.rdbuf(nullptr);
@@ -60,6 +62,10 @@ bool getOptions(int argc, char** argv, std::string& inputFileName, std::string& 
         }
     }
     
+    if (slow) {
+        chunked = true;
+    }
+    
     return true;
 }
 
@@ -67,17 +73,18 @@ int main(int argc, char** argv) {
     std::string inputFileName;
     std::string outputFileName;
     bool slow(false);
+    bool chunked(false);
     
-    if (!getOptions(argc, argv, inputFileName, outputFileName, slow)) {
+    if (!getOptions(argc, argv, inputFileName, outputFileName, slow, chunked)) {
         return 1;
     }
     
     std::unique_ptr<Converter> converter;
         
     try {
-        converter = Converter::getConverter(inputFileName, outputFileName, slow);
+        converter = Converter::getConverter(inputFileName, outputFileName, slow, chunked);
     
-        std::cout << "Converting FITS file " << inputFileName << " to HDF5 file " << outputFileName << (slow ? " using slower, memory-efficient method" : "") << std::endl;
+        std::cout << "Converting FITS file " << inputFileName << " to HDF5 file " << outputFileName << (slow ? " using slower, memory-efficient method" : "") << ". Dataset will " << (chunked ? "" : "not ") << "be chunked." << std::endl;
 
         converter->convert();
     } catch (const char* msg) {

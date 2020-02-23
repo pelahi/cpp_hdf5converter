@@ -1,6 +1,6 @@
 #include "Converter.h"
 
-Converter::Converter(std::string inputFileName, std::string outputFileName) :
+Converter::Converter(std::string inputFileName, std::string outputFileName, bool chunked) :
     status(0),
     strType(H5::PredType::C_S1, 256),
     boolType(H5::PredType::NATIVE_HBOOL), 
@@ -55,7 +55,7 @@ Converter::Converter(std::string inputFileName, std::string outputFileName) :
     intType.setOrder(H5T_ORDER_LE);
     
     // Dimensions of various datasets
-    this->dims = Dims::makeDims(N, dims);
+    this->dims = Dims::makeDims(N, dims, chunked);
     
     numBinsXY = this->dims.statsXY.numBins;        
     if (depth > 1) {
@@ -71,11 +71,11 @@ Converter::~Converter() {
     outputFile.close();
 }
 
-std::unique_ptr<Converter> Converter::getConverter(std::string inputFileName, std::string outputFileName, bool slow) {
+std::unique_ptr<Converter> Converter::getConverter(std::string inputFileName, std::string outputFileName, bool slow, bool chunked) {
     if (slow) {
-        return std::unique_ptr<Converter>(new SlowConverter(inputFileName, outputFileName));
+        return std::unique_ptr<Converter>(new SlowConverter(inputFileName, outputFileName, chunked));
     } else {
-        return std::unique_ptr<Converter>(new FastConverter(inputFileName, outputFileName));
+        return std::unique_ptr<Converter>(new FastConverter(inputFileName, outputFileName, chunked));
     }
 }
 

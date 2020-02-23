@@ -48,7 +48,7 @@ struct MipMap {
         mipMapDims.push_back(width);
         
         H5::DSetCreatPropList createPlist;
-        if (useChunks()) {
+        if (dims.chunked && useChunks()) {
             createPlist.setChunk(dims.N, dims.tileDims.data());
         }
         
