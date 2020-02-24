@@ -1,7 +1,9 @@
 #include "Converter.h"
 
-SlowConverter::SlowConverter(std::string inputFileName, std::string outputFileName, bool chunked) : Converter(inputFileName, outputFileName, chunked) {
-    MipMap::initialise(mipMaps, N, width, height, 1);
+SlowConverter::SlowConverter(std::string inputFileName, std::string outputFileName, Flags flags) : Converter(inputFileName, outputFileName, flags) {
+    if (addMipMaps) {
+        MipMap::initialise(mipMaps, N, width, height, 1);
+    }
     timer = Timer(stokes * depth * height * width, true);
 }
 
@@ -93,9 +95,11 @@ void SlowConverter::copy() {
                             statsZ.sumsSq[indexZ] += val * val;
                         }
                         
-                        // Accumulate mipmaps
-                        for (auto& mipMap : mipMaps) {
-                            mipMap.accumulate(val, x, y, 0);
+                        if (addMipMaps) {
+                            // Accumulate mipmaps
+                            for (auto& mipMap : mipMaps) {
+                                mipMap.accumulate(val, x, y, 0);
+                            }
                         }
                         
                     } else {
@@ -125,28 +129,31 @@ void SlowConverter::copy() {
                 statsXYZ.nanCounts[s] += statsXY.nanCounts[indexXY];
             }
             
-            // Final mipmap calculation
-            for (auto& mipMap : mipMaps) {
-                mipMap.calculate();
-            }
+            if (addMipMaps) {
+                // Final mipmap calculation
+                for (auto& mipMap : mipMaps) {
+                    mipMap.calculate();
+                }
+                
+                timer.process1.stop();
+                
+                // Write the mipmaps
+                
+                timer.write.start();
             
-            timer.process1.stop();
-            
-            // Write the mipmaps
-            
-            timer.write.start();
-        
-            for (auto& mipMap : mipMaps) {
-                // Start at current Stokes and channel
-                mipMap.write(s, c);
-            }
-            
-            timer.write.stop();
-            timer.process1.start();
-            
-            // Reset mipmaps before next channel
-            for (auto& mipMap : mipMaps) {
-                mipMap.reset();
+                for (auto& mipMap : mipMaps) {
+                    // Start at current Stokes and channel
+                    mipMap.write(s, c);
+                }
+                
+                timer.write.stop();
+                timer.process1.start();
+                
+                // Reset mipmaps before next channel
+                for (auto& mipMap : mipMaps) {
+                    mipMap.reset();
+                }
+                
             }
             
             timer.process1.stop();

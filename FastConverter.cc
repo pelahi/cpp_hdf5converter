@@ -1,7 +1,9 @@
 #include "Converter.h"
 
-FastConverter::FastConverter(std::string inputFileName, std::string outputFileName, bool chunked) : Converter(inputFileName, outputFileName, chunked) {
-    MipMap::initialise(mipMaps, N, width, height, depth);
+FastConverter::FastConverter(std::string inputFileName, std::string outputFileName, Flags flags) : Converter(inputFileName, outputFileName, flags) {
+    if (addMipMaps) {
+        MipMap::initialise(mipMaps, N, width, height, depth);
+    }
     timer = Timer(stokes * depth * height * width, false);
 }
 
@@ -310,51 +312,53 @@ void FastConverter::copy() {
         
         // In the fast algorithm, we keep one Stokes of mipmaps in memory at once and parallelise by channel
         
-        std::cout << " * MipMaps... " << std::endl;
+        if (addMipMaps) {
+            std::cout << " * MipMaps... " << std::endl;
 
-        timer.process4.start();
+            timer.process4.start();
         
 #pragma omp parallel for
-        for (auto c = 0; c < depth; c++) {
-            for (auto y = 0; y < height; y++) {
-                for (auto x = 0; x < width; x++) {
-                    auto sourceIndex = x + width * y + (height * width) * c;
-                    auto val = standardCube[sourceIndex];
-                    if (!std::isnan(val)) {
-                        for (auto& mipMap : mipMaps) {
-                            mipMap.accumulate(val, x, y, c);
+            for (auto c = 0; c < depth; c++) {
+                for (auto y = 0; y < height; y++) {
+                    for (auto x = 0; x < width; x++) {
+                        auto sourceIndex = x + width * y + (height * width) * c;
+                        auto val = standardCube[sourceIndex];
+                        if (!std::isnan(val)) {
+                            for (auto& mipMap : mipMaps) {
+                                mipMap.accumulate(val, x, y, c);
+                            }
                         }
                     }
                 }
+            } // end of mipmap loop
+            
+            // Final mipmap calculation
+            
+            for (auto& mipMap : mipMaps) {
+                mipMap.calculate();
             }
-        } // end of mipmap loop
         
-        // Final mipmap calculation
-        
-        for (auto& mipMap : mipMaps) {
-            mipMap.calculate();
+            timer.process4.stop();
+            timer.write.start();
+            
+            // Write the mipmaps
+            
+            for (auto& mipMap : mipMaps) {
+                // Start at current Stokes and channel 0
+                mipMap.write(currentStokes, 0);
+            }
+            
+            timer.write.stop();
+            
+            // Clear the mipmaps before the next Stokes
+            
+            timer.process4.start();
+            
+            for (auto& mipMap : mipMaps) {
+                mipMap.reset();
+            }
+            
+            timer.process4.stop();
         }
-        
-        timer.process4.stop();
-        timer.write.start();
-        
-        // Write the mipmaps
-        
-        for (auto& mipMap : mipMaps) {
-            // Start at current Stokes and channel 0
-            mipMap.write(currentStokes, 0);
-        }
-        
-        timer.write.stop();
-        
-        // Clear the mipmaps before the next Stokes
-        
-        timer.process4.start();
-        
-        for (auto& mipMap : mipMaps) {
-            mipMap.reset();
-        }
-        
-        timer.process4.stop();
     } // end of Stokes loop
 }

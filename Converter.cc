@@ -1,12 +1,13 @@
 #include "Converter.h"
 
-Converter::Converter(std::string inputFileName, std::string outputFileName, bool chunked) :
+Converter::Converter(std::string inputFileName, std::string outputFileName, Flags flags) :
     status(0),
     strType(H5::PredType::C_S1, 256),
     boolType(H5::PredType::NATIVE_HBOOL), 
     doubleType(H5::PredType::NATIVE_DOUBLE),
     floatType(H5::PredType::NATIVE_FLOAT),
-    intType(H5::PredType::NATIVE_INT64)
+    intType(H5::PredType::NATIVE_INT64),
+    addMipMaps(flags.mipmaps)
 {
     fits_open_file(&inputFilePtr, inputFileName.c_str(), READONLY, &status);
     
@@ -55,7 +56,7 @@ Converter::Converter(std::string inputFileName, std::string outputFileName, bool
     intType.setOrder(H5T_ORDER_LE);
     
     // Dimensions of various datasets
-    this->dims = Dims::makeDims(N, dims, chunked);
+    this->dims = Dims::makeDims(N, dims, flags.chunked);
     
     numBinsXY = this->dims.statsXY.numBins;        
     if (depth > 1) {
@@ -71,11 +72,11 @@ Converter::~Converter() {
     outputFile.close();
 }
 
-std::unique_ptr<Converter> Converter::getConverter(std::string inputFileName, std::string outputFileName, bool slow, bool chunked) {
-    if (slow) {
-        return std::unique_ptr<Converter>(new SlowConverter(inputFileName, outputFileName, chunked));
+std::unique_ptr<Converter> Converter::getConverter(std::string inputFileName, std::string outputFileName, Flags flags) {
+    if (flags.slow) {
+        return std::unique_ptr<Converter>(new SlowConverter(inputFileName, outputFileName, flags));
     } else {
-        return std::unique_ptr<Converter>(new FastConverter(inputFileName, outputFileName, chunked));
+        return std::unique_ptr<Converter>(new FastConverter(inputFileName, outputFileName, flags));
     }
 }
 

@@ -7,13 +7,20 @@
 #include "MipMap.h"
 #include "Timer.h"
 
+struct Flags {
+    Flags() : slow(0), chunked(0), mipmaps(0) {};
+    bool slow;
+    bool chunked;
+    bool mipmaps;
+};
+
 class Converter {
 public:
     Converter() {}
-    Converter(std::string inputFileName, std::string outputFileName, bool chunked);
+    Converter(std::string inputFileName, std::string outputFileName, Flags flags);
     ~Converter();
     
-    static std::unique_ptr<Converter> getConverter(std::string inputFileName, std::string outputFileName, bool slow, bool chunked);
+    static std::unique_ptr<Converter> getConverter(std::string inputFileName, std::string outputFileName, Flags flags);
     void convert();
     
 protected:
@@ -47,6 +54,7 @@ protected:
     
     // MipMaps
     std::vector<MipMap> mipMaps;
+    bool addMipMaps;
     
     int status;
     Timer timer;
@@ -69,7 +77,7 @@ protected:
 
 class FastConverter : public Converter {
 public:
-    FastConverter(std::string inputFileName, std::string outputFileName, bool chunked);
+    FastConverter(std::string inputFileName, std::string outputFileName, Flags flags);
     
 protected:
     void copy() override;
@@ -78,7 +86,7 @@ protected:
 
 class SlowConverter : public Converter {
 public:
-    SlowConverter(std::string inputFileName, std::string outputFileName, bool chunked);
+    SlowConverter(std::string inputFileName, std::string outputFileName, Flags flags);
     
 protected:
     void copy() override;
